@@ -45,7 +45,7 @@ toc: false
 </style>
 
 <div class="hero">
-  <h1>Hello, Observable Framework</h1>
+  <h1>Hello, Smplrvable</h1>
   <h2>Welcome to your new project! Edit&nbsp;<code style="font-size: 90%;">docs/index.md</code> to change this page.</h2>
   <a href="https://observablehq.com/framework/getting-started">Get started<span style="display: inline-block; margin-left: 0.25rem;">↗︎</span></a>
 </div>
@@ -80,8 +80,8 @@ toc: false
 </div>
 
 ```js
-const aapl = FileAttachment("aapl.csv").csv({typed: true});
-const penguins = FileAttachment("penguins.csv").csv({typed: true});
+const aapl = FileAttachment("aapl.csv").csv({ typed: true });
+const penguins = FileAttachment("penguins.csv").csv({ typed: true });
 ```
 
 ---

@@ -9,7 +9,9 @@
     "observable": "observable"
   },
   "dependencies": {
+    "@mobily/ts-belt": "^3.13.1",
     "@observablehq/framework": "^1.6.0",
+    "@smplrspace/smplr-loader": "^2.16.1",
     "d3-dsv": "^3.0.1",
     "d3-time-format": "^4.1.0"
   },
