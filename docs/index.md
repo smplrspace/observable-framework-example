@@ -30,24 +30,25 @@ const mappedco2Data = sensorDataFiltered
 
 ```js
 // Inputs (for choosing smplrspace heatmap styling)
-const style = view(
-  Inputs.radio(["bar-chart", "grid", "spheres"], {
+const styleInput = Inputs.radio(["bar-chart", "grid", "spheres"], {
     label: "Heatmap style",
     value: "bar-chart",
-  })
-);
+  });
 
-const gridFill = view(
-  Inputs.range([0.5, 1.5], { label: "Fill factor", step: 0.1 })
-);
+const style = Generators.input(styleInput);
 
-const elevation = view(
-  Inputs.range([0, 3], {
+const gridFillInput = Inputs.range([0.5, 1.5], { label: "Fill factor", step: 0.1 })
+;
+
+const gridFill = Generators.input(gridFillInput);
+
+const elevationInput = Inputs.range([0, 3], {
     label: "Elevation (grid & sphere)",
     step: 0.25,
     value: 2.75,
-  })
-);
+  });
+
+const elevation = Generators.input(elevationInput);
 ```
 
 <h2>${new Date(timeSlider).toUTCString()}</h2> <!-- TODO update to match TZ -->
@@ -90,14 +91,23 @@ const smplrspaceHeatmap = space.addDataLayer({
 });
 ```
 
-<div class="grid grid-cols-3 grid-rows-3">
-<div class="card grid-colspan-1 grid-rowspan-3">
+<div class="grid grid-cols-3">
+<div class="card grid-colspan-1">
 <h2>Carbon dioxide sensor readings (ppm)</h2>
 ${resize(width => testHorizon(width))}
 </div>
-<div class="grid-colspan-2" id="smplr-container">
+<div class="grid-colspan-2 card">
+ <h2>Interior CO<sub>2</sub> concentrations</h2>
+ ${styleInput}
+ ${gridFillInput}
+ ${elevationInput}
+ <div id="smplr-container">
  ${smplrspaceHeatmap}
+ </div>
 </div>
+<div>
+ ${Inputs.table(sensorDataFiltered)}
+ </div>
 </div>
 
 ```js
