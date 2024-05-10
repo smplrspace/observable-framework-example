@@ -3,75 +3,44 @@ toc: false
 ---
 
 # Smplrspace on Observable
+## Carbon dioxide sensor data
 
 ```js
 import { sensors } from "./data/sensors.js";
 import { co2Data } from "./data/co2.js";
 import { pipe, A, D } from "@mobily/ts-belt";
+import { G } from "@mobily/ts-belt";
+import { loadSmplrJs } from "@smplrspace/smplr-loader";
+
+const smplr = await loadSmplrJs("esm", "dev");
 ```
 
 ```js
-display(co2Data);
+const mappedco2Data = sensorDataFiltered
+  .map((d) => {
+    const sensor = sensors.find((s) => s.id === d.uuid);
+    if (!sensor) {
+      return null;
+    }
+    return { ...d, position: sensor.position};
+  })
+  .filter((d) => G.isNotNullable(d))
+;
 ```
 
 ```js
-const sensorDataClean = co2Data.map((d) => ({
-  ...d,
-  dateNew: d3.utcParse("%Y-%m-%dT%H:%M:%SZ")(d.ts),
-}));
-```
-
-```js
-const firstTenUuids = pipe(
-  sensorDataClean,
-  A.map(D.get("uuid")),
-  A.uniq,
-  A.take(10)
-);
-const limitedSensorDataClean = pipe(
-  sensorDataClean,
-  A.filter((d) => A.includes(firstTenUuids, d.uuid))
-);
-```
-
-```js
-const testChart = Plot.plot({
-  color: { legend: true },
-  marks: [
-    Plot.areaY(limitedSensorDataClean, {
-      x: "dateNew",
-      y: "value",
-      fill: "uuid",
-      tip: true,
-    }),
-  ],
-});
-```
-
-```js
-display(testChart);
-```
-
-```js
-display(sensorDataClean);
-```
-
-```js
+// Inputs (for choosing smplrspace heatmap styling)
 const style = view(
   Inputs.radio(["bar-chart", "grid", "spheres"], {
     label: "Heatmap style",
     value: "bar-chart",
   })
 );
-```
 
-```js
 const gridFill = view(
   Inputs.range([0.5, 1.5], { label: "Fill factor", step: 0.1 })
 );
-```
 
-```js
 const elevation = view(
   Inputs.range([0, 3], {
     label: "Elevation (grid & sphere)",
@@ -81,24 +50,10 @@ const elevation = view(
 );
 ```
 
-<div id="smplr-container" style='height:500px; background-color: #F3F6F8;' />
+<h2>${new Date(timeSlider).toUTCString()}</h2> <!-- TODO update to match TZ -->
+${timeSliderInput}
 
 ```js
-import { G } from "@mobily/ts-belt";
-import { loadSmplrJs } from "@smplrspace/smplr-loader";
-
-const smplr = await loadSmplrJs("esm", "dev");
-
-const mappedco2Data = co2Data
-  .map((d) => {
-    const sensor = sensors.find((s) => s.id === d.uuid);
-    if (!sensor) {
-      return null;
-    }
-    return { ...d, position: sensor.position };
-  })
-  .filter((d) => G.isNotNullable(d));
-
 const space = new smplr.Space({
   spaceId: "775d15d1-f26c-4e02-aa60-4a3a2a1bd785",
   clientToken: "pub_8c31c16e36804afe832b392f6e0d7843",
@@ -116,7 +71,7 @@ const viewerReady = await space.startViewer({
 ```
 
 ```js
-space.addDataLayer({
+const smplrspaceHeatmap = space.addDataLayer({
   id: "hm",
   type: "heatmap",
   style,
@@ -134,3 +89,77 @@ space.addDataLayer({
   elevation,
 });
 ```
+
+<div class="grid grid-cols-3 grid-rows-3">
+<div class="card grid-colspan-1 grid-rowspan-3">
+<h2>Carbon dioxide sensor readings (ppm)</h2>
+${resize(width => testHorizon(width))}
+</div>
+<div class="grid-colspan-2" id="smplr-container">
+ ${smplrspaceHeatmap}
+</div>
+</div>
+
+```js
+const sensorDataClean = co2Data.map((d) => ({
+  ...d,
+  dateNew: d3.utcParse("%Y-%m-%dT%H:%M:%SZ")(d.ts),
+}));
+```
+
+```js echo
+// Filter sensor data to only match slider time
+const timeSliderDateTime = (d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(new Date(timeSlider).toUTCString()));
+
+const sensorDataFiltered = sensorDataClean.filter(d => new Date(d.dateNew).toUTCString() == new Date(timeSliderDateTime).toUTCString());
+
+view(Inputs.table(sensorDataFiltered));
+```
+
+```js
+const firstTenUuids = pipe(
+  sensorDataClean,
+  A.map(D.get("uuid")),
+  A.uniq,
+  A.take(10)
+);
+
+const limitedSensorDataClean = pipe(
+  sensorDataClean,
+  A.filter((d) => A.includes(firstTenUuids, d.uuid))
+);
+```
+
+```js
+const timeSliderInput = Inputs.range(d3.extent(limitedSensorDataClean.map(d => d.dateNew)), {step: 600000});
+
+const timeSlider = Generators.input(timeSliderInput);
+
+timeSliderInput.querySelector("input[type=number]").remove();
+```
+
+```js
+const bands = 5;
+
+const step = +(d3.max(limitedSensorDataClean, (d) => d.value) / bands).toPrecision(2);
+
+function testHorizon(width) {
+  return Plot.plot({
+  height: 800,
+  width,
+  margin: 10,
+  marginTop: 30,
+  x: {axis: "top", label: null},
+  y: {domain: [0, step], axis: null},
+  color: {scheme: "greys" },
+  marks: [
+    d3.range(bands).map((band) => Plot.areaY(limitedSensorDataClean, {x: "dateNew", y: (d) => d.value - band * step, fy: "uuid", fill: band, opacity: 0.2, sort: "dateNew", clip: true})),
+    Plot.ruleX([d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(new Date(timeSlider).toUTCString())]),
+    Plot.axisFy({frameAnchor: "left", dx: -5, dy: 20, fill: "currentColor", textStroke: "white", label: null, fontSize: 15})
+  ]
+});
+}
+```
+
+<div class="grid grid-cols-3">
+</div>
