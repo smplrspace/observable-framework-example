@@ -98,10 +98,10 @@ const smplrspaceHeatmap = space.addDataLayer({
 ${resize((width, height) => testHorizon(width, height))}
 </div>
 <div class="card grid-rowspan-1 grid-colspan-1">
-${drawBAN("Maximum recorded concentration:", d3.format(",")(d3.max(sensorDataClean, d => d.value)) + " ppm", "Sensor ID: " + maxValue.uuid, "Recorded at: " + new Date(maxValue.dateNew).toUTCString())}
+${drawBAN("Peak concentration:", d3.format(",")(maxValue.value) + " ppm", "Sensor: " + sensorsMaxValue[0], new Date(maxValue.dateNew).toUTCString())}
 </div>
 <div class="card grid-rowspan-1 grid-colspan-1">
-${drawBAN("Minimum recorded concentration:", d3.format(",")(d3.min(sensorDataClean, d => d.value)) + " ppm", "Sensor ID: " + minValue.uuid, "Recorded at: " + new Date(minValue.dateNew).toUTCString())}
+${drawBAN("Minimum concentration:", minValue.value + " ppm", "Recorded " + d3.format(",")(sensorsMinValue.length) + " total times by", uniqueSensorsMinValue + " different sensors")}
 </div>
 <div class="grid-colspan-2 grid-rowspan-3 card">
  ${styleInput}
@@ -137,18 +137,33 @@ const timeSliderDateTime = (d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(new Date(ti
 const sensorDataFiltered = sensorDataClean.filter(d => new Date(d.dateNew).toUTCString() == new Date(timeSliderDateTime).toUTCString());
 
 // Get object with maximum recorded value
-const maxValue = sensorDataClean.reduce((max, val) => max.value > val.value ? max : val).value;
+const maxValue = sensorDataClean.reduce((max, val) => max.value > val.value ? max : val);
 
 display(maxValue);
+display(maxValue.value);
 
-display(new Set(sensorDataClean.filter(d => d.value == maxValue)));
+const sensorsMaxValue = sensorDataClean.filter(d => d.value == maxValue.value).map(d => d.uuid);
+
+display(sensorsMaxValue);
+
+const uniqueSensorsMaxValue = new Set(sensorsMaxValue).size;
+
+display(uniqueSensorsMaxValue);
 
 
-const minValue = sensorDataClean.reduce((min, val) => min.value < val.value ? min : val).value;
+// Get object with minimum recorded value
+const minValue = sensorDataClean.reduce((min, val) => min.value < val.value ? min : val);
 
 display(minValue);
+display(minValue.value);
 
-display(new Set(sensorDataClean.filter(d => d.value == minValue)));
+const sensorsMinValue = sensorDataClean.filter(d => d.value == minValue.value).map(d => d.uuid);
+
+display(sensorsMinValue);
+
+const uniqueSensorsMinValue = new Set(sensorsMinValue).size;
+
+display(uniqueSensorsMinValue);
 ```
 
 ```js
