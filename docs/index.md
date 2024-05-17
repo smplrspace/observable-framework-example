@@ -4,6 +4,7 @@ theme: wide
 ---
 
 # Interior carbon dioxide readings
+
 ## Smplrspace and Observable Framework
 
 ```js
@@ -17,42 +18,43 @@ const smplr = await loadSmplrJs("esm", "dev");
 ```
 
 ```js
-const mappedco2Data = sensorDataFiltered
+const mappedCo2Data = sensorDataFiltered
   .map((d) => {
     const sensor = sensors.find((s) => s.id === d.uuid);
     if (!sensor) {
       return null;
     }
-    return { ...d, position: sensor.position};
+    return { ...d, position: sensor.position };
   })
-  .filter((d) => G.isNotNullable(d))
-;
+  .filter((d) => G.isNotNullable(d));
 ```
 
 ```js
 // Inputs (for choosing smplrspace heatmap styling)
 const styleInput = Inputs.radio(["bar-chart", "grid", "spheres"], {
-    label: "Heatmap style",
-    value: "bar-chart",
-  });
+  label: "Heatmap style",
+  value: "bar-chart",
+});
 
 const style = Generators.input(styleInput);
 
-const gridFillInput = Inputs.range([0.5, 1.5], { label: "Fill factor", step: 0.1 })
-;
-
+const gridFillInput = Inputs.range([0.5, 1.5], {
+  label: "Fill factor",
+  step: 0.1,
+});
 const gridFill = Generators.input(gridFillInput);
 
 const elevationInput = Inputs.range([0, 3], {
-    label: "Elevation (grid & sphere)",
-    step: 0.25,
-    value: 2.75,
-  });
+  label: "Elevation (grid & sphere)",
+  step: 0.25,
+  value: 2.75,
+});
 
 const elevation = Generators.input(elevationInput);
 ```
 
 ## ${new Date(timeSlider).toUTCString()} <!-- TODO update to match TZ -->
+
 ${timeSliderInput}
 
 ```js
@@ -66,7 +68,7 @@ const viewerReady = await space.startViewer({
   preview: false,
   allowModeChange: true,
   renderOptions: {
-    backgroundColor: 'gainsboro',
+    backgroundColor: "gainsboro",
   },
   onError: (error) => console.error("Could not start viewer", error),
 });
@@ -77,7 +79,7 @@ const smplrspaceHeatmap = space.addDataLayer({
   id: "hm",
   type: "heatmap",
   style,
-  data: mappedco2Data,
+  data: mappedCo2Data,
   value: (d) => d.value,
   color: smplr.Color.numericScale({
     name: smplr.Color.NumericScale.RdYlGn,
@@ -118,7 +120,7 @@ ${drawBAN("Minimum concentration:", minValue.value + " ppm", "Recorded " + d3.fo
 <h2>Distribution of CO<sub>2</sub> readings for this space</h2>
 ${resize((width, height) => co2Histogram(width, height))}
 </div>
-<div class="card grid-colspan-2" style="padding: 0">
+<div class="card grid-colspan-2" style="padding: 0; overflow: hidden;">
  ${Inputs.table(sensorDataClean, {columns: ["dateNew", "uuid", "value"], header: {dateNew: "Time", uuid: "Sensor ID", value: "CO2 concentration (ppm)"}})}
  </div>
  </div>
@@ -132,56 +134,44 @@ const sensorDataClean = co2Data.map((d) => ({
 
 ```js
 // Filter sensor data to only match slider time
-const timeSliderDateTime = (d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(new Date(timeSlider).toUTCString()));
+const timeSliderDateTime = d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(
+  new Date(timeSlider).toUTCString()
+);
 
-const sensorDataFiltered = sensorDataClean.filter(d => new Date(d.dateNew).toUTCString() == new Date(timeSliderDateTime).toUTCString());
+const sensorDataFiltered = sensorDataClean.filter(
+  (d) =>
+    new Date(d.dateNew).toUTCString() ==
+    new Date(timeSliderDateTime).toUTCString()
+);
 
 // Get object with maximum recorded value
-const maxValue = sensorDataClean.reduce((max, val) => max.value > val.value ? max : val);
+const maxValue = sensorDataClean.reduce((max, val) =>
+  max.value > val.value ? max : val
+);
 
-display(maxValue);
-display(maxValue.value);
-
-const sensorsMaxValue = sensorDataClean.filter(d => d.value == maxValue.value).map(d => d.uuid);
-
-display(sensorsMaxValue);
+const sensorsMaxValue = sensorDataClean
+  .filter((d) => d.value == maxValue.value)
+  .map((d) => d.uuid);
 
 const uniqueSensorsMaxValue = new Set(sensorsMaxValue).size;
 
-display(uniqueSensorsMaxValue);
-
-
 // Get object with minimum recorded value
-const minValue = sensorDataClean.reduce((min, val) => min.value < val.value ? min : val);
+const minValue = sensorDataClean.reduce((min, val) =>
+  min.value < val.value ? min : val
+);
 
-display(minValue);
-display(minValue.value);
-
-const sensorsMinValue = sensorDataClean.filter(d => d.value == minValue.value).map(d => d.uuid);
-
-display(sensorsMinValue);
+const sensorsMinValue = sensorDataClean
+  .filter((d) => d.value == minValue.value)
+  .map((d) => d.uuid);
 
 const uniqueSensorsMinValue = new Set(sensorsMinValue).size;
-
-display(uniqueSensorsMinValue);
 ```
 
 ```js
-const firstTenUuids = pipe(
-  sensorDataClean,
-  A.map(D.get("uuid")),
-  A.uniq,
-  A.take(10)
+const timeSliderInput = Inputs.range(
+  d3.extent(sensorDataClean.map((d) => d.dateNew)),
+  { step: 600000 }
 );
-
-const limitedSensorDataClean = pipe(
-  sensorDataClean,
-  A.filter((d) => A.includes(firstTenUuids, d.uuid))
-);
-```
-
-```js
-const timeSliderInput = Inputs.range(d3.extent(limitedSensorDataClean.map(d => d.dateNew)), {step: 600000});
 
 const timeSlider = Generators.input(timeSliderInput);
 
@@ -189,57 +179,132 @@ timeSliderInput.querySelector("input[type=number]").remove();
 ```
 
 ```js
-const bands = 5;
+const bands = 7;
 
-const step = +(d3.max(limitedSensorDataClean, (d) => d.value) / bands).toPrecision(2);
+console.log(d3.max(sensorDataClean, (d) => d.value));
+
+const step = +(d3.max(sensorDataClean, (d) => d.value) / bands).toPrecision(2);
 
 function testHorizon(width, height) {
   return Plot.plot({
-  height: height,
-  width,
-  marginLeft: 100,
-  marginRight: 0,
-  marginTop: 30,
-  x: {axis: "top", label: null},
-  y: {domain: [0, step], axis: null},
-  color: {scheme: "Greys"},
-  marks: [
-    d3.range(bands).map((band) => Plot.areaY(sensorDataClean, {x: "dateNew", y: (d) => d.value - band * step, fy: "uuid", fill: band, opacity: 0.5, sort: "dateNew", clip: true})),
-    Plot.ruleX([d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(new Date(timeSlider).toUTCString())]),
-    Plot.axisFy({frameAnchor: "left", dx: -100, dy: 0, label: null, fontSize: 12, fontWeight: 400})
-  ]
-});
+    height: height,
+    width,
+    marginLeft: 100,
+    marginRight: 0,
+    marginTop: 30,
+    x: { axis: "top", label: null },
+    y: { domain: [0, step], axis: null },
+    color: { scheme: "Greys" },
+    marks: [
+      d3.range(bands).map((band) =>
+        Plot.areaY(sensorDataClean, {
+          x: "dateNew",
+          y: (d) => d.value - band * step,
+          fy: "uuid",
+          fill: band,
+          opacity: 0.85,
+          sort: "dateNew",
+          clip: true,
+        })
+      ),
+      Plot.ruleX(
+        [
+          d3.utcParse("%a, %d %b %Y %H:%M:%S GMT")(
+            new Date(timeSlider).toUTCString()
+          ),
+        ],
+        { stroke: "black" }
+      ),
+      Plot.axisFy({
+        frameAnchor: "left",
+        dx: -100,
+        dy: 0,
+        label: null,
+        fontSize: 12,
+        fontWeight: 400,
+      }),
+    ],
+  });
 }
+```
+
+```js
+const breakpoints = [600, 1000];
+const screenSize =
+  window.innerWidth < breakpoints[0]
+    ? 0
+    : window.innerWidth < breakpoints[1]
+    ? 1
+    : 2;
 ```
 
 ```js
 function drawBAN(description, largeText, info1, info2) {
   return Plot.plot({
-  width,
-  height: 600,
-  marks: [
-    Plot.text([description], {frameAnchor: "middle", fontSize: 80, dy: -220}),
-    Plot.text([largeText], {frameAnchor: "middle", fontSize: 130, lineWidth: 50, fontWeight: 600, dy: -50}),
-    Plot.text([info1], {frameAnchor: "middle", fontSize: 60, dy: 150}),
-    Plot.text([info2], {frameAnchor: "middle", fontSize: 60, dy: 250})
-  ]
-});
+    width,
+    height: 600,
+    marks: [
+      Plot.text([description], {
+        frameAnchor: "middle",
+        fontSize: [20, 40, 80][screenSize],
+        dy: -220,
+      }),
+      Plot.text([largeText], {
+        frameAnchor: "middle",
+        fontSize: () => (window.innerWidth < 600 ? 30 : 130),
+        lineWidth: 50,
+        fontWeight: 600,
+        dy: -50,
+      }),
+      Plot.text([info1], { frameAnchor: "middle", fontSize: 60, dy: 150 }),
+      Plot.text([info2], { frameAnchor: "middle", fontSize: 60, dy: 250 }),
+    ],
+  });
 }
 ```
 
 ```js
 function co2Histogram(width, height) {
   return Plot.plot({
-    y: {type: "sqrt", grid: true, domain: [0, 3000]},
-    x: {label: "CO2 concentration (ppm)"},
-    color: {scheme: "RdYlGn", reverse: true, domain: d3.extent(sensorDataClean, d => d.value)},
+    y: { type: "sqrt", grid: true, domain: [0, 3000] },
+    x: { label: "CO2 concentration (ppm)" },
+    // color: {
+    //   scheme: "RdYlGn",
+    //   reverse: true,
+    //   domain: [400, 1200],
+    // },
     width,
     height: height - 20,
     marks: [
       //Plot.rect([1], {x1: 400, x2: 1000, y1: 0, y2: 3000, opacity: 0.1}),
-      Plot.rectY(sensorDataClean, Plot.binX({y: "count"}, {x: "value", opacity: 0.6})),
+      Plot.rectY(
+        sensorDataClean,
+        Plot.binX(
+          { y: "count" /* , fill: "x" */ },
+          {
+            x: "value",
+            opacity: 0.95,
+            fill: (d) => {
+              // same value for whole bar width (20)
+              const normalizedValue = Math.floor(d.value / 20) * 20;
+              return co2ColorScale(normalizedValue);
+            },
+          }
+        )
+      ),
       //Plot.text([`Normal indoor CO2 concentration range\n400 to 1,000 ppm`], {x: 1000, y: 3000, dy: 10, dx: -10, textAnchor: "end", fontStyle: "italic"})
-    ]
+    ],
   });
 }
+```
+
+```js
+const co2ColorScale = (value) =>
+  smplr.Color.cssToSmplrColor(
+    smplr.Color.numericScale({
+      name: smplr.Color.NumericScale.RdYlGn,
+      domain: [400, 800],
+      invert: true,
+    })(value)
+  );
 ```
