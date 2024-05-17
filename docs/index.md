@@ -94,35 +94,42 @@ const smplrspaceHeatmap = space.addDataLayer({
 });
 ```
 
-<div class="grid grid-cols-3 grid-rows-4">
-<div class="card grid-colspan-1 grid-rowspan-4">
-<h2>Carbon dioxide sensor readings (ppm)</h2>
-${resize((width, height) => testHorizon(width, height))}
-</div>
-<div class="card grid-rowspan-1 grid-colspan-1">
-${drawBAN("Peak concentration:", d3.format(",")(maxValue.value) + " ppm", "Sensor: " + sensorsMaxValue[0], new Date(maxValue.dateNew).toUTCString())}
-</div>
-<div class="card grid-rowspan-1 grid-colspan-1">
-${drawBAN("Minimum concentration:", minValue.value + " ppm", "Recorded " + d3.format(",")(sensorsMinValue.length) + " total times by", uniqueSensorsMinValue + " different sensors")}
-</div>
-<div class="grid-colspan-2 grid-rowspan-3 card">
- ${styleInput}
- ${gridFillInput}
- ${elevationInput}
- <div id="smplr-container" style="height: 550px">
- ${smplrspaceHeatmap}
- </div>
-</div>
+<div class="grid grid-cols-3 grid-rows-4" style="grid-auto-rows: auto;">
+  <div class="card grid-colspan-1 grid-rowspan-4">
+    <h2>Carbon dioxide sensor readings (ppm)</h2>
+    ${resize((width, height) => testHorizon(width, height))}
+  </div>
+  <div class="card grid-rowspan-1 grid-colspan-1">
+    <h2>Peak concentration: </h2>
+    <span class="big">${d3.format(",")(maxValue.value) + " ppm"}</span>
+    <br><br>
+    <h3>${"Sensor: " + sensorsMaxValue[0] + " at " + new Date(maxValue.dateNew).toUTCString()}</h3>
+  </div>
+  <div class="card grid-rowspan-1 grid-colspan-1">
+    <h2>Minimum concentration: </h2>
+    <span class="big">${"Minimum concentration:", minValue.value + " ppm"}</span>
+    <br><br>
+    <h3>${"Recorded " + d3.format(",")(sensorsMinValue.length) + " total times by " + uniqueSensorsMinValue + " different sensors"}</h3>
+  </div>
+  <div class="grid-colspan-2 grid-rowspan-3 card">
+    ${styleInput}
+    ${gridFillInput}
+    ${elevationInput}
+    <div id="smplr-container" style="height: 450px">
+      ${smplrspaceHeatmap}
+    </div>
+  </div>
 </div>
 
-<div class="grid grid-cols-4">
-<div class="card grid-colspan-2">
-<h2>Distribution of CO<sub>2</sub> readings for this space</h2>
-${resize((width, height) => co2Histogram(width, height))}
-</div>
-<div class="card grid-colspan-2" style="padding: 0; overflow: hidden;">
- ${Inputs.table(sensorDataClean, {columns: ["dateNew", "uuid", "value"], header: {dateNew: "Time", uuid: "Sensor ID", value: "CO2 concentration (ppm)"}})}
- </div>
+<div class="grid grid-cols-2"">
+  <div class="card grid-colspan-1" style="height: 300px">
+    <h2>Distribution of CO<sub>2</sub> readings for this space</h2>
+    ${resize((width, height) => co2Histogram(width, height))}
+  </div>
+  <div class="card grid-colspan-1">
+    ${search}
+    ${Inputs.table(searchValue, {columns: ["dateNew", "uuid", "value"], header: {dateNew: "Time", uuid: "Sensor ID", value: "CO2 concentration (ppm)"}})}
+   </div>
  </div>
 
 ```js
@@ -239,48 +246,19 @@ const screenSize =
 ```
 
 ```js
-function drawBAN(description, largeText, info1, info2) {
-  return Plot.plot({
-    width,
-    height: 600,
-    marks: [
-      Plot.text([description], {
-        frameAnchor: "middle",
-        fontSize: [20, 40, 80][screenSize],
-        dy: -220,
-      }),
-      Plot.text([largeText], {
-        frameAnchor: "middle",
-        fontSize: () => (window.innerWidth < 600 ? 30 : 130),
-        lineWidth: 50,
-        fontWeight: 600,
-        dy: -50,
-      }),
-      Plot.text([info1], { frameAnchor: "middle", fontSize: 60, dy: 150 }),
-      Plot.text([info2], { frameAnchor: "middle", fontSize: 60, dy: 250 }),
-    ],
-  });
-}
-```
-
-```js
 function co2Histogram(width, height) {
   return Plot.plot({
     y: { type: "sqrt", grid: true, domain: [0, 3000] },
     x: { label: "CO2 concentration (ppm)" },
-    // color: {
-    //   scheme: "RdYlGn",
-    //   reverse: true,
-    //   domain: [400, 1200],
-    // },
     width,
     height: height - 20,
+    marginBottom: 40,
+    marginTop: 40,
     marks: [
-      //Plot.rect([1], {x1: 400, x2: 1000, y1: 0, y2: 3000, opacity: 0.1}),
       Plot.rectY(
         sensorDataClean,
         Plot.binX(
-          { y: "count" /* , fill: "x" */ },
+          { y: "count" },
           {
             x: "value",
             opacity: 0.95,
@@ -292,7 +270,6 @@ function co2Histogram(width, height) {
           }
         )
       ),
-      //Plot.text([`Normal indoor CO2 concentration range\n400 to 1,000 ppm`], {x: 1000, y: 3000, dy: 10, dx: -10, textAnchor: "end", fontStyle: "italic"})
     ],
   });
 }
@@ -307,4 +284,13 @@ const co2ColorScale = (value) =>
       invert: true,
     })(value)
   );
+```
+
+```js
+// search Input
+const search = Inputs.search(sensorDataClean, {
+  placeholder: "Search sensor data…",
+});
+
+const searchValue = Generators.input(search);
 ```
