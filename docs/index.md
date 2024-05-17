@@ -95,7 +95,7 @@ const smplrspaceHeatmap = space.addDataLayer({
 ```
 
 <div class="grid grid-cols-3 grid-rows-4" style="grid-auto-rows: auto;">
-  <div class="card grid-colspan-1 grid-rowspan-4">
+  <div class="card grid-colspan-1 grid-rowspan-4" style="height: 700px">
     <h2>Carbon dioxide sensor readings (ppm)</h2>
     ${resize((width, height) => testHorizon(width, height))}
   </div>
